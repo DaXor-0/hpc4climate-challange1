@@ -1,0 +1,16 @@
+&master_nml
+ lrestart = .false.
+/
+&time_nml
+ ini_datetime_string = "2021-07-14T00:00:00"
+ end_datetime_string = "2021-07-16T00:00:00"
+ dt_restart          = 5184000       ! dummy value to avoid crashes
+/
+&master_model_nml
+  model_type=1
+  model_name="ATMO"
+  model_namelist_filename="NAMELIST_NWP_high_prec"
+  model_min_rank=1
+  model_max_rank=65536
+  model_inc_rank=1
+/

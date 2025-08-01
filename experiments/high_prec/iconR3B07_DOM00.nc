@@ -1,0 +1,1 @@
+/work/bk1414/summerschool/high_prec/grids/iconR3B07_DOM00.nc

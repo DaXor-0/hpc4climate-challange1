@@ -1,0 +1,1 @@
+/work/bk1414/summerschool/atm_rivers_files/latbc_2022031600.nc

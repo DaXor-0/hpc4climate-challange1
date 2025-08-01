@@ -1,0 +1,1 @@
+/work/bk1414/summerschool/high_prec/data_lam/init_ML_20210714T000000Z.nc

@@ -1,0 +1,1 @@
+/work/bb1262/data/icon/ifces-scalexa/scalexa_hurricane_medium_domain//grid//external_parameter_icon_domain1_DOM01_tiles.nc

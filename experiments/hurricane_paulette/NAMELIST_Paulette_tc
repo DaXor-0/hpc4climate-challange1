@@ -1,0 +1,269 @@
+!
+&comin_nml
+  plugin_list(1)%name           = "hurricane_detector"
+  plugin_list(1)%plugin_library = "/work/bk1414/summerschool/icon/build/externals/comin/build/plugins/python_adapter/libpython_adapter.so"
+  plugin_list(1)%options        = "../../detectors/hurricane/hurricane_detector.py"
+/
+&coupling_mode_nml
+  coupled_to_output = .TRUE.
+/
+&parallel_nml
+ nproma         = 32
+ p_test_run     = .false.
+ l_test_openmp  = .false.
+ l_log_checks   = .false.
+ num_io_procs                 = 0
+ num_prefetch_proc            = 1
+/
+&grid_nml
+ ! cell_type is not used = 3            ! triangular cells
+ dynamics_grid_filename =  'domain1_DOM01.nc' !, 'domain2_DOM02.nc',
+ !dynamics_parent_grid_id = 0 ,   1,
+ lredgrid_phys     = .false.
+ lfeedback         = .false.
+ l_limited_area    = .true.
+! start_time        = 0., 21600. 
+ start_time        = 0., 3600. 
+/ 
+&initicon_nml
+ init_mode              =  7 !1= dwd 4=cosmo, 2=ifs, 3=combined, 7= dwd data
+ ana_varnames_map_file  = 'ana_varnames_map_file.txt'
+ nlevsoil_in            =  4
+ lread_ana              = .false.
+ ltile_init		= .true.
+ ltile_coldstart	= .true. !um den Fehler mit ntiles zu beheben
+/
+&run_nml
+ nsteps      = 100
+ num_lev     = 50,      ! number of full levels of vertical grid
+ dtime       = 30     ! [s] timestep in seconds
+ ldynamics   = .TRUE.       ! dynamics
+ ltestcase   = .FALSE.      ! testcase
+ ltransport  = .TRUE.       ! transport
+ iforcing    = 3  !
+ ltimer      = .true.       ! 
+ timers_level = 10          !
+ msg_level   = 5           ! detailed report during integration
+ output      = 'nml','totint'
+ restart_filename = "/work/bk1414/summerschool/hurricane_paulette_restart_files/restart_atm_<rsttime>.mfr"
+/
+&dynamics_nml
+ iequations  = 3       ! 1: hydrost. atmosphere
+ lcoriolis   = .TRUE.
+! idiv_method     = 1
+ divavg_cntrwgt  = 0.50
+/
+&limarea_nml
+ itype_latbc     = 1
+ dtime_latbc     = 21600.   ! 3600, 7200, 10800, 14400, 18000, 21600
+ latbc_path      = '/work/bb1262/data/icon/ifces-scalexa/scalexa_hurricane_medium_domain//latbc_ini/'
+ latbc_filename  = 'igfff00000000.<y><m><d><h>_lbc.nc'  !e.g. 20200904_T00_lbc.nc  igfff00000000.2020090912_lbc.nc
+ latbc_boundary_grid    =  '/work/bb1262/data/icon/ifces-scalexa/scalexa_hurricane_medium_domain//grid//domain1_DOM01_lbc.nc'
+ latbc_varnames_map_file = 'dict.latbc'
+/
+&nwp_phy_nml
+ inwp_gscp                    = 4        ! 1: default, 2: graupel, 4: for two-moment microphysics
+ lshallowconv_only            = .FALSE., .TRUE.   ! for high resolution<3km set it to TRUE
+ icalc_reff                   = 4        ! reff consistent with current microphysics
+! icpl_rad_reff                = 1        ! coupling of the reff with radiation
+ inwp_convection              = 0        ! 1: Tiedtke/Bechtold convection
+ inwp_radiation               = 4        ! 1: RRTM, 4: ecRad radiation
+ inwp_cldcover                = 1        ! 0: no cld, 1: new diagnostic, 3: COSMO, 5: grid scale clouds
+ inwp_turb                    = 1        ! vertical diffusion and transfer, 1/10: Raschendorfer, 2: GME, 3: EDMF-DUALM (ntracer+1,ntiles=8)
+ inwp_satad                   = 1        ! 1: saturation adjustment at constant density
+ inwp_sso                     = 0        ! 1: subgrid scale orographic drag, Lott and Miller scheme (COSMO)
+ inwp_gwd                     = 0        ! 1: non-orographic gravity wave drag, Orr-Ern-Bechtold-scheme (IFS)
+ inwp_surface                 = 1        ! 1: surface scheme, TERRA
+ itype_z0                     = 2        ! 1: default, 2: turn off SSO part of z0
+ dt_conv                      = 300
+ !dt_sso                       = 300
+ !dt_gwd                       = 300
+ dt_rad                       = 600
+ latm_above_top               = .FALSE.      !,.FALSE.,.FALSE.
+ efdt_min_raylfric            = 7200.
+ icapdcycl                    = 3
+ lrtm_filename                = 'rrtmg_lw.nc'       ! longwave absorption coefficients for RRTM_LW
+/
+&nwp_tuning_nml
+ itune_albedo                =                          1         ! reduced albedo (w.r.t. MODIS data) over Sahara
+ tune_gkwake                 =                        0.25
+ tune_gfrcrit                =                        0.333
+ tune_gkdrag                 =                        0.0
+ tune_minsnowfrac            =                        0.3
+ tune_box_liq_asy            =                        3.5
+ tune_gust_factor            =                        7.25
+ tune_sgsclifac              =                        1.0
+ tune_zceff_min = 0.075
+/
+! radiation_nml: radiation scheme ---------------------------------------------
+&radiation_nml
+ ecrad_data_path             = "/work/bk1414/summerschool/icon/ecrad_data/"
+ irad_o3                     =                         79         ! ozone climatology
+ irad_aero                   =                          6         ! aerosols
+ islope_rad                  =                          0         ! Slope correction for surface radiation
+ albedo_type                 =                          2         ! type of surface albedo
+ vmr_co2                     =                        400.e-06    ! adjusted by F.Senf     (300 PI, 400 PD, 800 2xC02, 1600 4xCO2)
+ vmr_ch4                     =                   1800.e-09
+ vmr_n2o                     =                   322.0e-09
+ vmr_o2                      =                     0.20946
+ vmr_cfc11                   =                    240.e-12
+ vmr_cfc12                   =                    532.e-12
+/
+&twomom_mcrph_nml
+ccn_type                     =                          8         ! aerosol scenario for cloud nucleation (CCN)
+/
+! sleve_nml: vertical level specification -------------------------------------
+&sleve_nml
+ min_lay_thckn               =                         20.0       ! layer thickness of lowermost layer
+ top_height                  =                      34000.0       ! height of model top
+ stretch_fac                 =                          0.65      ! stretching factor to vary distribution of model levels
+ decay_scale_1               =                       4000.0       ! decay scale of large-scale topography component
+ decay_scale_2               =                       2500.0       ! decay scale of small-scale topography component
+ decay_exp                   =                          1.2       ! exponent of decay function
+ flat_height                 =                      16000.0       ! height above which the coordinate surfaces are flat
+/
+
+! transport_nml: tracer transport ---------------------------------------------
+&transport_nml
+ ivadv_tracer                =           3, 3, 3, 3, 3, 3         ! tracer specific method to compute vertical advection
+ itype_hlimit                =           3, 4, 4, 4, 4, 4         ! type of limiter for horizontal transport
+ ihadv_tracer                =          52, 2, 2, 2, 2, 2         ! tracer specific method to compute horizontal advection
+ llsq_svd                    =                      .TRUE.        ! use SV decomposition for least squares design matrix
+/
+
+! turbdiff_nml: turbulent diffusion -------------------------------------------
+&turbdiff_nml
+ tkhmin                      =                          0.75      ! scaling factor for minimum vertical diffusion coefficient
+ tkmmin                      =                          0.75      ! scaling factor for minimum vertical diffusion coefficient
+ pat_len                     =                        750.0       ! effective length scale of thermal surface patterns
+ tur_len                     =                        300.0       ! asymptotic maximal turbulent distance
+ rat_sea                     =                          1.0
+ frcsmot                     =                          0.2       ! these 2 switches together apply vertical smoothing of the TKE source terms
+ imode_frcsmot               =                            2       ! in the tropics (only), which reduces the moist bias in the tropical lower troposphere
+ imode_tkesso                =                            1       ! mode of calculating th SSO source term for TKE production
+ itype_sher                  =                            3       ! type of shear forcing used in turbulence
+ ltkeshs                     =                        .TRUE.      ! include correction term for coarse grids in hor. shear production term
+ ltkesso                     =                        .TRUE.      ! consider TKE-production by sub-grid SSO wakes
+ a_hshr                      =                          2.0       ! length scale factor for separated horizontal shear mode
+ icldm_turb                  =                            2       ! mode of cloud water representation in turbulence
+ q_crit                      =                          1.6       ! critical value for normalized supersaturation
+/
+
+&lnd_nml
+ ntiles                      =                          3         ! number of tiles
+ nlev_snow                   =                          3         ! number of snow layers
+ lmulti_snow                 =                      .FALSE.       ! .TRUE. for use of multi-layer snow model
+ idiag_snowfrac              =                         20         ! type of snow-fraction diagnosis
+ lsnowtile                   =                       .TRUE.       ! .TRUE.=consider snow-covered and snow-free separately
+ itype_root                  =                          2         ! root density distribution
+ itype_heatcond              =                          3         ! type of soil heat conductivity
+ itype_lndtbl                =                          4         ! table for associating surface parameters
+ itype_evsl                  =                          4         ! type of bare soil evaporation
+ itype_canopy                =                          2         ! Type of canopy parameterization
+ itype_snowevap              =                          3         ! Snow evap. in vegetated areas with add. variables for snow age and max. snow height
+ itype_trvg                  =                          3         ! BATS scheme with add. prog. var. for integrated plant transpiration since sunrise
+ cwimax_ml                   =                      5.e-4         ! scaling parameter for max. interception storage
+ c_soil                      =                       1.25         ! surface area density of the evaporative soil surface
+ c_soil_urb                  =                        0.5         ! same for urban areas
+ lseaice                     =                      .TRUE.        ! .TRUE. for use of sea-ice model
+ lprog_albsi                 =                      .TRUE.        ! prognostic seaice albedo
+ llake                       =                      .TRUE.        ! .TRUE. for use of lake model
+ !sstice_mode                 =                          6         ! 6: SST and sea ice fraction are updated with user-defined interval
+ !sst_td_filename             =                      
+ !ci_td_filename              =                      
+/
+&nonhydrostatic_nml
+ iadv_rhotheta               =                          2         ! advection method for rho and rhotheta
+ ivctype                     =                          2         ! type of vertical coordinate
+ itime_scheme                =                          4         ! time integration scheme
+ ndyn_substeps               =                          5         ! number of dynamics steps per fast-physics step
+ exner_expol                 =                          0.333     ! temporal extrapolation of Exner function
+ vwind_offctr                =                          0.2       ! off-centering in vertical wind solver
+ damp_height                 =                      26000.0       ! height at which Rayleigh damping of vertical wind starts
+ rayleigh_coeff              =                          5.0       ! Rayleigh damping coefficient
+ divdamp_order               =                         24         ! order of divergence damping 
+ divdamp_type                =                         32         ! type of divergence damping
+ divdamp_fac                 =                          0.004     ! scaling factor for divergence damping
+ !l_open_ubc                  =                     .FALSE.        ! .TRUE.=use open upper boundary condition
+ igradp_method               =                          3         ! discretization of horizontal pressure gradient
+ l_zdiffu_t                  =                      .TRUE.        ! specifies computation of Smagorinsky temperature diffusion
+ thslp_zdiffu                =                          0.02      ! slope threshold (temperature diffusion)
+ thhgtd_zdiffu               =                        125.0       ! threshold of height difference (temperature diffusion)
+ htop_moist_proc             =                      22500.0       ! max. height for moist physics
+ hbot_qvsubstep              =                      16000.0       ! height above which QV is advected with substepping scheme
+/
+&dynamics_nml
+ iequations                   = 3
+ idiv_method                  = 1
+ divavg_cntrwgt               = 0.50
+ lcoriolis                    = .TRUE.
+/
+&diffusion_nml
+ hdiff_order                  = 5
+ itype_vn_diffu               = 1
+ itype_t_diffu                = 2
+ hdiff_efdt_ratio             = 24.0        ! 24.0 for R2B6; recommendation for R3B7: 30.0
+ hdiff_smag_fac               = 0.025       ! 0.025for R2B6; recommendation for R3B7: 0.02
+ lhdiff_vn                    = .TRUE.
+ lhdiff_temp                  = .TRUE.
+/
+&interpol_nml
+ nudge_max_coeff              = 0.05
+ nudge_zone_width             = 10  !-1 create nudge zone in grid
+ nudge_efold_width            = 3
+ lsq_high_ord                 = 2
+ rbf_vec_scale_c              = 0.3,  0.1,  0.03
+ rbf_vec_scale_v              = 0.4,  0.25, 0.07
+ rbf_vec_scale_e              = 0.45, 0.37, 0.25
+/
+! nudging_nml: Parameters for the upper boundary nudging in the LAM ---------
+&nudging_nml
+ nudge_type                  =                          0         ! upper boundary nudging switched off
+/
+&gridref_nml
+ denom_diffu_v                = 150.
+/
+&extpar_nml
+ itopo                        = 1
+ n_iter_smooth_topo           = 1
+ heightdiff_threshold         = 2250.
+/
+&io_nml
+ itype_pres_msl  = 5              ! new DWD method: Mixture between IFS and old GME method
+ dt_checkpoint    = 28800 ! [s] trigger new restart file
+ lkeep_in_sync    = .true.
+ restart_file_type = 5
+ restart_write_mode = 'joint procs multifile'
+/
+!====================================================================
+! Regridded Output
+! ===================================================================
+&output_nml
+ output_start     = "2020-09-07T00:00:00Z"
+ output_end       = "2020-09-14T00:00:00Z"
+ output_interval  = "PT30M"
+ file_interval    = "PT8H"
+ include_last     = .TRUE.
+ dom              = 1
+ remap            = 1
+ filename_format  = "DOM<physdom>_<levtype>_<datetime2>_regrid7km"
+ ml_varlist       = 'pres_msl', 'sp_10m'
+ reg_lon_def      = -65,0.064,-18
+ reg_lat_def      = 10,0.06,35
+ filetype         = 5
+/
+! DUMMY OUTPUT NAMELIST TO MAKE pres_msl available
+&output_nml
+ output_start     = "2020-09-07T00:00:00Z"
+ output_end       = "2020-09-14T00:00:00Z"
+ output_interval  = "PT30S"
+ file_interval    = "P7D"
+ dom              = 1
+ include_last     = .TRUE.
+ filename_format  = "foo<physdom>_<levtype>_<datetime2>"
+ ml_varlist       = 'pres_msl'  ! 'pres_msl' must appear in an output_nml to be available in comin...
+ filetype         = 999
+/
+!====================================================================
+! END OF OUTPUT TEMPLATE
+! LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL
